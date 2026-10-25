@@ -675,11 +675,18 @@ function customer() {
   // CHÌA KHÓA CỦA LỖI: bản cũ không chặn v rỗng — v='' vẫn khớp c.phone='' của khách đầu tiên không có SĐT
   // (đúng khách ngomaingocquynhzl trong video) nên mỗi lần xóa trắng ô là handler điền lại tên đầy đủ.
   if (!v) return null;
-  return D.customers.find(c => c.code === v || c.name === v || c.phone === v);
+  return D.customers.find(c => c.code.toLowerCase() === v.toLowerCase() || c.phone === v) || custByName(v);
 }
 
 // khách: gõ tên/SĐT/mã → trùng khách cũ thì dùng khách cũ, không thì tạo khách mới
 const custByPhone = ph => { ph = String(ph).replace(/\D/g, ''); return ph.length >= 9 ? D.customers.find(c => String(c.phone).replace(/\D/g, '') === ph) : null; };
+// [24/10/2026] Gõ TÊN khách cũ (gõ tay, khác hoa/thường/dấu) → tìm theo tên chuẩn hoá (không dấu, chữ thường). Chỉ dùng khi tên trùng DUY NHẤT 1 khách; trùng nhiều người thì để người dùng chọn từ gợi ý.
+function custByName(v) {
+  const n = norm(v);
+  if (!n) return null;
+  const hits = D.customers.filter(c => norm(c.name) === n);
+  return hits.length === 1 ? hits[0] : null;
+}
 // [22/10/2026] Canh bao SDT trung: SDT dang nhap da co khach khac (khong phai khach dang chon)
 function dupPhoneWarn() {
   const w = $('ncDupWarn'); if (!w) return;
@@ -713,9 +720,16 @@ $('custSearch').addEventListener('input', () => {
   if (picked) {
     $('custSearch').value = picked.name; $('ncPhone').value = picked.phone || ''; $('ncAddr').value = picked.address || ''; $('ncFb').value = picked.facebook || '';
     $('custSearch').dataset.code = picked.code;
-  } else if ($('custSearch').dataset.code) {
-    const locked = D.customers.find(c => c.code === $('custSearch').dataset.code);
-    if (!locked || raw !== locked.name) delete $('custSearch').dataset.code;
+  } else {
+    // [24/10/2026] Gõ tay đúng tên khách cũ → tự điền SĐT/địa chỉ/FB luôn, không cần bấm chọn gợi ý.
+    const byName = custByName(raw);
+    if (byName) {
+      $('ncPhone').value = byName.phone || ''; $('ncAddr').value = byName.address || ''; $('ncFb').value = byName.facebook || '';
+      $('custSearch').dataset.code = byName.code;
+    } else if ($('custSearch').dataset.code) {
+      const locked = D.customers.find(c => c.code === $('custSearch').dataset.code);
+      if (!locked || norm(raw) !== norm(locked.name)) delete $('custSearch').dataset.code;
+    }
   }
   showCust();
 });
