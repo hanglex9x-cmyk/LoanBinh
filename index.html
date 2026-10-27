@@ -591,14 +591,23 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwCYciJNmhKL-8ppfcZ8STv
 function run() {
   if (window.google && google.script && google.script.run) return google.script.run;
   let ok = () => {}, fail = () => {};
+  // [27/10/2026] Tu dong thu lai khi mat mang (Load failed): Apps Script hay "ngu" (cold start ~10s)
+  // nen lan goi dau tren 4G/wifi yeu de rot; lan thu lai thuong roi vao luc may chu da nong nen qua luon.
+  // Chi thu lai ham AN TOAN: doc du lieu + ghi de theo ma (luu SP/KH/ty gia/mau tin, sua don, doi trang thai).
+  // KHONG thu lai: tao don, nhap kho, tao PDF, duyet don online, nhap Excel (goi lai = tao trung du lieu).
+  const RETRYABLE = new Set(['getInitData', 'listOrders', 'getCustomerDetail', 'getOrderDetail', 'getDashboard', 'listRates', 'stockReport', 'getDailyReport', 'shopCatalog', 'shopTrackOrder', 'listWebOrders', 'saveProduct', 'saveCustomer', 'saveRate', 'saveZaloTemplate', 'updateOrder', 'setOrderStatus', 'deleteRate']);
+  const call = (fn, args, triesLeft) => fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn, args }) })
+    .then(res => res.json())
+    .then(j => j.ok ? ok(j.data) : fail(new Error(j.error)))
+    .catch(e => {
+      if (triesLeft > 0 && RETRYABLE.has(fn)) setTimeout(() => call(fn, args, triesLeft - 1), triesLeft === 2 ? 1500 : 3000);
+      else fail(new Error('Không kết nối được máy chủ (' + e.message + ')'));
+    });
   const r = new Proxy({}, { get: (t, fn) =>
     fn === 'withSuccessHandler' ? (f => { ok = f; return r; }) :
     fn === 'withFailureHandler' ? (f => { fail = f; return r; }) :
-    (...args) => fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ fn, args }) })
-      .then(res => res.json())
-      .then(j => j.ok ? ok(j.data) : fail(new Error(j.error)))
-      .catch(e => fail(new Error('Không kết nối được máy chủ (' + e.message + ')'))) });
+    (...args) => call(fn, args, 2) });
   return r;
 }
 
