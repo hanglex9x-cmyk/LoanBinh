@@ -953,7 +953,7 @@ $('reprint').onclick = () => {
     .withFailureHandler(e => { showMsg(e.message); done(); }).exportOrderPdf(code, PIN);
 };
 
-const ZALO_TPL_DEFAULT = 'Chào {ten}, shop gửi em đơn hàng {madon} ({ngay}):\n{chitiet}\nTổng: {tong}đ | Đã trả: {datra}đ | Còn lại: {conlai}đ\nHàng order từ 12-18 ngày\nHàng may từ 4 tuần trở lên\nXem đơn (PDF): {link}';
+const ZALO_TPL_DEFAULT = 'Chào {ten}, shop gửi bạn đơn hàng {madon} ({ngay}):\n{chitiet}\nTổng: {tong}đ | Đã trả: {datra}đ | Còn lại: {conlai}đ\nHàng order từ 12-18 ngày\nHàng may từ 4 tuần trở lên\nXem đơn (PDF): {link}';
 function zaloText(o, r, pdfUrl) {
   let tpl = (D.zaloTpl || '').trim() || ZALO_TPL_DEFAULT;
   if (!pdfUrl) tpl = tpl.split('\n').filter(l => l.indexOf('{link}') < 0).join('\n');
