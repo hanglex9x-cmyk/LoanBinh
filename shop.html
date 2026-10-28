@@ -187,6 +187,7 @@ function applyShop() {
   $('heroText').textContent = s.intro || '';
   $('perkLead').textContent = 'Order Taobao ' + lead();
   if (s.promo) { $('promo').style.display = ''; $('promoText').textContent = s.promo; }
+  document.querySelector('.chip[data-f="order"]').style.display = (s.showOrder === false) ? 'none' : '';
   $('fAddr').textContent = s.address || '';
   const ph = String(s.phone || '').replace(/\D/g, '');
   $('fContact').innerHTML = (ph ? `Điện thoại / Zalo: <a href="tel:${ph}"><b>${esc(s.phone)}</b></a> · <a href="https://zalo.me/${ph}" target="_blank" rel="noopener">Nhắn Zalo</a><br>` : '')
@@ -203,7 +204,7 @@ async function loadCatalog() {
 function render() {
   if (!C) return;
   const q = norm($('q').value.trim()), sort = $('sort').value;
-  let ps = C.products.filter(p => (!q || norm(p.code + ' ' + p.name).includes(q)) && (!F || (F === 'stock' ? p.inStock : !p.inStock)));
+  let ps = C.products.filter(p => (!q || norm(p.code + ' ' + p.name).includes(q)) && (!F || (F === 'stock' ? p.inStock : !p.inStock)) && (p.inStock || C.shop.showOrder !== false));
   if (sort === 'asc') ps.sort((a, b) => a.price - b.price);
   else if (sort === 'desc') ps.sort((a, b) => b.price - a.price);
   else if (sort === 'sold') ps.sort((a, b) => b.sold - a.sold);
